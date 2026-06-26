@@ -5,7 +5,7 @@ Cách dùng:
     from utils.data_loader import load_knowledge_base, split_text, build_vectorstore
 
     text        = load_knowledge_base()
-    chunks      = split_text(text, chunk_size=500, chunk_overlap=50)
+    chunks      = split_text(text, chunk_size=2000, chunk_overlap=200)
     vectorstore = build_vectorstore(chunks, embeddings)
 """
 from pathlib import Path
@@ -27,7 +27,7 @@ def load_knowledge_base(path: str = None) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def split_text(text: str, chunk_size: int = 500, chunk_overlap: int = 50) -> list:
+def split_text(text: str, chunk_size: int = 2000, chunk_overlap: int = 200) -> list:
     """
     Chia văn bản thành các đoạn nhỏ (chunks) để index.
 
@@ -35,8 +35,8 @@ def split_text(text: str, chunk_size: int = 500, chunk_overlap: int = 50) -> lis
 
     Args:
         text         : văn bản cần chia
-        chunk_size   : số ký tự tối đa mỗi chunk (mặc định: 500)
-        chunk_overlap: số ký tự chồng lên nhau giữa 2 chunks liên tiếp (mặc định: 50)
+        chunk_size   : số ký tự tối đa mỗi chunk (mặc định: 2000)
+        chunk_overlap: số ký tự chồng lên nhau giữa 2 chunks liên tiếp (mặc định: 200)
 
     Returns:
         list[str] — danh sách các chuỗi chunk
@@ -63,7 +63,17 @@ def build_vectorstore(chunks: list, embeddings):
     """
     from langchain_community.vectorstores import FAISS
 
+    index_path = Path(__file__).parent.parent.parent / "data" / "faiss_index"
+    if index_path.exists():
+        print(f"♻️  Đang tải FAISS index từ cache: {index_path}")
+        return FAISS.load_local(
+            str(index_path),
+            embeddings,
+            allow_dangerous_deserialization=True,
+        )
+
     print(f"🔨 Đang tạo FAISS index từ {len(chunks)} chunks ...")
     vectorstore = FAISS.from_texts(chunks, embeddings)
+    vectorstore.save_local(str(index_path))
     print("✅ FAISS vectorstore đã sẵn sàng.")
     return vectorstore

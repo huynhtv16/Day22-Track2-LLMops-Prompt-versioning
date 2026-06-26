@@ -19,8 +19,12 @@ os.environ["LANGCHAIN_PROJECT"]    = os.getenv("LANGCHAIN_PROJECT", "day22-lab")
 os.environ["LANGCHAIN_ENDPOINT"]   = os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
 
 # ── Provider mặc định ─────────────────────────────────────────────────────
-# Đổi giá trị PROVIDER trong .env: openai | gemini | anthropic | ollama | openrouter
+# Đổi giá trị PROVIDER trong .env: openai | gemini | anthropic | ollama | openrouter | deepseek
 PROVIDER = os.getenv("PROVIDER", "openai").lower()
+REQUEST_DELAY_SECONDS = float(os.getenv(
+    "REQUEST_DELAY_SECONDS",
+    "7" if PROVIDER == "gemini" else "0",
+))
 
 # ── OpenAI ────────────────────────────────────────────────────────────────
 OPENAI_API_KEY         = os.getenv("OPENAI_API_KEY", "")
@@ -30,8 +34,8 @@ OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-s
 
 # ── Google Gemini ─────────────────────────────────────────────────────────
 GOOGLE_API_KEY          = os.getenv("GOOGLE_API_KEY", "")
-GEMINI_MODEL            = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-GEMINI_EMBEDDING_MODEL  = os.getenv("GEMINI_EMBEDDING_MODEL", "models/embedding-001")
+GEMINI_MODEL            = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+GEMINI_EMBEDDING_MODEL  = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
 
 # ── Anthropic ─────────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
@@ -47,9 +51,18 @@ OPENROUTER_API_KEY  = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL    = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
+# ── DeepSeek (OpenAI-compatible API) ──────────────────────────────────────
+DEEPSEEK_API_KEY  = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_MODEL    = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+
 # ── LangSmith ─────────────────────────────────────────────────────────────
 LANGSMITH_API_KEY = os.getenv("LANGCHAIN_API_KEY", "")
 LANGSMITH_PROJECT = os.getenv("LANGCHAIN_PROJECT", "day22-lab")
+
+
+def _has_real_key(value: str) -> bool:
+    return bool(value and value.strip() and not value.startswith("your_"))
 
 
 def validate() -> bool:
@@ -59,17 +72,19 @@ def validate() -> bool:
     """
     missing = []
 
-    if not LANGSMITH_API_KEY:
+    if not _has_real_key(LANGSMITH_API_KEY):
         missing.append("LANGCHAIN_API_KEY (LangSmith)")
 
-    if PROVIDER == "openai" and not OPENAI_API_KEY:
+    if PROVIDER == "openai" and not _has_real_key(OPENAI_API_KEY):
         missing.append("OPENAI_API_KEY")
-    elif PROVIDER == "gemini" and not GOOGLE_API_KEY:
+    elif PROVIDER == "gemini" and not _has_real_key(GOOGLE_API_KEY):
         missing.append("GOOGLE_API_KEY")
-    elif PROVIDER == "anthropic" and not ANTHROPIC_API_KEY:
+    elif PROVIDER == "anthropic" and not _has_real_key(ANTHROPIC_API_KEY):
         missing.append("ANTHROPIC_API_KEY")
-    elif PROVIDER == "openrouter" and not OPENROUTER_API_KEY:
+    elif PROVIDER == "openrouter" and not _has_real_key(OPENROUTER_API_KEY):
         missing.append("OPENROUTER_API_KEY")
+    elif PROVIDER == "deepseek" and not _has_real_key(DEEPSEEK_API_KEY):
+        missing.append("DEEPSEEK_API_KEY")
     # Ollama: không cần API key
 
     if missing:
